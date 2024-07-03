@@ -1,7 +1,5 @@
-import numpy as np
 import random
-
-from graph import Node
+import math
 
 
 class Individual:
@@ -168,22 +166,32 @@ class GA:
             parent1_genes = parent1.genes
             parent2_genes = parent2.genes
 
-            child_genes = parent1_genes[:crossover_point] + parent2_genes[crossover_point:]
-            child_genes[self.disaster_node] = 0
+            child_genes_1 = parent1_genes[:crossover_point] + parent2_genes[crossover_point:]
+            child_genes_1[self.disaster_node] = 0
 
-            return Individual(child_genes, *self.fitness(child_genes))
+            child_genes_2 = parent2_genes[:crossover_point] + parent1_genes[crossover_point:]
+            child_genes_2[self.disaster_node] = 0
+
+            return [
+                Individual(child_genes_1, *self.fitness(child_genes_1)),
+                Individual(child_genes_2, *self.fitness(child_genes_2)),
+            ]
 
         new_population = []
 
-        for _ in range(self.population_size):
+        for _ in range(math.ceil(self.population_size / 2)):
             parent1 = roulette_wheel_selection()
             parent2 = roulette_wheel_selection()
 
             while parent1 == parent2:
                 parent2 = roulette_wheel_selection()
 
-            child = crossover(parent1, parent2)
-            new_population.append(child)
+            child_1, child_2 = crossover(parent1, parent2)
+            new_population.append(child_1)
+            new_population.append(child_2)
+
+        if len(new_population) > self.population_size:
+            new_population = new_population[:-1]
 
         self.population = new_population
 
