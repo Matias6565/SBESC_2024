@@ -23,10 +23,12 @@ df_disaster_nodes = []
 df_ilp_min_distance = []
 df_ilp_min_distance_nodes = []
 df_ilp_min_nodes = []
+df_ilp_min_nodes_distance = []
 
 df_ga_min_distance = []
 df_ga_min_distance_nodes = []
 df_ga_min_nodes = []
+df_ga_min_nodes_distance = []
 
 execution_times_ilp = []
 execution_times_ga = []
@@ -179,9 +181,9 @@ for disaster_node in capacities:
     )
 
     print("\nGA Nodes Minimization")
-    *_, migration_demand_nodes, remaining_demand_nodes = ga_nodes.run()
+    *_, ga_min_node_dist, migration_demand_nodes, remaining_demand_nodes = ga_nodes.run()
     print("GA Distance Minimization")
-    *_, ga_min_dist, migration_demand_dist, remaining_deman_dist = ga_dist.run()
+    *_, ga_min_dist_dist, migration_demand_dist, remaining_deman_dist = ga_dist.run()
 
     end_time_ga = time.time()
     execution_time_ga = end_time_ga - start_time_ga
@@ -230,15 +232,22 @@ for disaster_node in capacities:
     print(f"=================================================================================\n\n")
 
     # Results
+    best_ilp_solution_nodes_dist = 0
+
+    for i in ilp_migration_demand_nodes:
+        best_ilp_solution_nodes_dist += G_paths.nodes[i[0]].cost
+
     df_disaster_nodes.append(disaster_node)
 
     df_ilp_min_distance.append(best_ilp_solution_distance)
     df_ilp_min_distance_nodes.append(len(ilp_migration_demand_dist))
     df_ilp_min_nodes.append(len(ilp_migration_demand_nodes))
+    df_ilp_min_nodes_distance.append(best_ilp_solution_nodes_dist)
 
-    df_ga_min_distance.append(ga_min_dist)
+    df_ga_min_distance.append(ga_min_dist_dist)
     df_ga_min_distance_nodes.append(len(migration_demand_dist))
     df_ga_min_nodes.append(len(migration_demand_nodes))
+    df_ga_min_nodes_distance.append(ga_min_node_dist)
 
     execution_times_ilp.append(execution_time_ilp)
     execution_times_ga.append(execution_time_ga)
@@ -249,9 +258,11 @@ df = pd.DataFrame(
         "ILP Distance Minimization": df_ilp_min_distance,
         "ILP Distance Minimization Nodes": df_ilp_min_distance_nodes,
         "ILP Nodes Minimization": df_ilp_min_nodes,
+        "ILP Nodes Minimization Distance": df_ilp_min_nodes_distance,
         "GA Distance Minimization": df_ga_min_distance,
         "GA Distance Minimization Nodes": df_ga_min_distance_nodes,
         "GA Nodes Minimization": df_ga_min_nodes,
+        "GA Nodes Minimization Distance": df_ga_min_nodes_distance,
     }
 )
 
@@ -266,14 +277,21 @@ df_dist_node = df.melt(
     id_vars="Disaster Node",
     value_vars=["ILP Distance Minimization Nodes", "GA Distance Minimization Nodes"],
     var_name="Solution",
-    value_name="Distance Cost Nodes",
+    value_name="Nodes",
 )
 
 df_node = df.melt(
     id_vars="Disaster Node",
     value_vars=["ILP Nodes Minimization", "GA Nodes Minimization"],
     var_name="Solution",
-    value_name="Node Cost",
+    value_name="Nodes",
+)
+
+df_node_dist = df.melt(
+    id_vars="Disaster Node",
+    value_vars=["ILP Nodes Minimization Distance", "GA Nodes Minimization Distance"],
+    var_name="Solution",
+    value_name="Distance Cost",
 )
 
 sns.set_theme(style="whitegrid", context="talk", font_scale=1.1)
@@ -292,7 +310,7 @@ plt.savefig(os.path.join(OUTPUT_DIR, "plt_distance_cost_comparative.pdf"))
 
 # Distance minimization nodes plot
 plt.figure(figsize=(16, 8))
-ax1 = sns.barplot(x="Disaster Node", y="Distance Cost Nodes", hue="Solution", data=df_dist_node, palette="Set2")
+ax1 = sns.barplot(x="Disaster Node", y="Nodes", hue="Solution", data=df_dist_node, palette="Set2")
 add_value_labels(ax1, is_float=False)
 plt.xlabel("Disaster Node")
 plt.ylabel("Nodes Used")
@@ -304,7 +322,7 @@ plt.savefig(os.path.join(OUTPUT_DIR, "plt_distance_nodes_comparative.pdf"))
 
 # Nodes minimization plot
 plt.figure(figsize=(16, 8))
-ax1 = sns.barplot(x="Disaster Node", y="Node Cost", hue="Solution", data=df_node, palette="Set2")
+ax1 = sns.barplot(x="Disaster Node", y="Nodes", hue="Solution", data=df_node, palette="Set2")
 add_value_labels(ax1, is_float=False)
 plt.xlabel("Disaster Node")
 plt.ylabel("Nodes Used")
@@ -313,6 +331,18 @@ plt.legend(loc="lower left")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "plt_node_cost_comparative.pdf"))
+
+# Nodes minimization distance plot
+plt.figure(figsize=(16, 8))
+ax1 = sns.barplot(x="Disaster Node", y="Distance Cost", hue="Solution", data=df_node_dist, palette="Set2")
+add_value_labels(ax1, is_float=False)
+plt.xlabel("Disaster Node")
+plt.ylabel("Distance Cost (Km)")
+plt.title("Node Minimization")
+plt.legend(loc="lower left")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig(os.path.join(OUTPUT_DIR, "plt_node_cost_distance_comparative.pdf"))
 
 
 # Execution time plot
